@@ -1,55 +1,84 @@
 import csv
+import unicodedata
 from pathlib import Path
 
+# El CSV se guarda en la misma carpeta que este archivo main.py.
 ARCHIVO_CSV = Path(__file__).with_name("paises.csv")
 CAMPOS = ["nombre", "poblacion", "superficie", "continente"]
 
 
+def normalizar(texto):
+    """Pasa a minúsculas y quita tildes para comparar textos."""
+    texto = unicodedata.normalize("NFD", str(texto))
+    texto = "".join(caracter for caracter in texto if unicodedata.category(caracter) != "Mn")
+    return texto.strip().casefold()
+
+
 def cargar_paises():
-    """Lee los países del CSV y devuelve una lista de diccionarios."""
+    """Lee el CSV y devuelve una lista de diccionarios válidos."""
     if not ARCHIVO_CSV.exists():
-        with ARCHIVO_CSV.open("w", newline="", encoding="utf-8") as archivo:
-            escritor = csv.DictWriter(archivo, fieldnames=CAMPOS)
-            escritor.writeheader()
+        guardar_paises([])
         return []
 
     paises = []
+    nombres = set()
+
     try:
         with ARCHIVO_CSV.open("r", newline="", encoding="utf-8-sig") as archivo:
             lector = csv.DictReader(archivo)
-            if lector.fieldnames is None or not all(campo in lector.fieldnames for campo in CAMPOS):
-                raise ValueError("El CSV no contiene las columnas requeridas.")
+
+            if lector.fieldnames is None or lector.fieldnames != CAMPOS:
+                print("Error: el CSV debe tener estos encabezados:")
+                print(",".join(CAMPOS))
+                return []
+
             for numero_fila, fila in enumerate(lector, start=2):
                 try:
                     nombre = (fila.get("nombre") or "").strip()
                     continente = (fila.get("continente") or "").strip()
-                    poblacion = int(fila.get("poblacion", ""))
-                    superficie = int(fila.get("superficie", ""))
-                    if not nombre or not continente or poblacion < 0 or superficie <= 0:
-                        raise ValueError
+                    poblacion_texto = (fila.get("poblacion") or "").strip()
+                    superficie_texto = (fila.get("superficie") or "").strip()
+
+                    if not nombre or not continente or not poblacion_texto or not superficie_texto:
+                        raise ValueError("hay campos vacíos")
+
+                    poblacion = int(poblacion_texto)
+                    superficie = int(superficie_texto)
+
+                    if poblacion < 0:
+                        raise ValueError("la población no puede ser negativa")
+                    if superficie <= 0:
+                        raise ValueError("la superficie debe ser mayor que cero")
+                    if normalizar(nombre) in nombres:
+                        raise ValueError("el país está repetido")
+
                     paises.append({
                         "nombre": nombre,
                         "poblacion": poblacion,
                         "superficie": superficie,
                         "continente": continente
                     })
-                except (ValueError, TypeError):
-                    print(f"Aviso: se omitió la fila {numero_fila} del CSV por tener datos inválidos.")
-    except (OSError, UnicodeError, csv.Error, ValueError) as error:
-        print(f"Error al leer el CSV: {error}")
+                    nombres.add(normalizar(nombre))
+
+                except (ValueError, TypeError) as error:
+                    print(f"Aviso: se omitió la fila {numero_fila}: {error}.")
+
+    except (OSError, UnicodeError, csv.Error) as error:
+        print(f"Error al leer el archivo CSV: {error}")
+
     return paises
 
 
 def guardar_paises(paises):
-    """Guarda la lista completa en el archivo CSV."""
+    """Guarda todos los registros en paises.csv."""
     try:
-        with ARCHIVO_CSV.open("w", newline="", encoding="utf-8") as archivo:
+        with ARCHIVO_CSV.open("w", newline="", encoding="utf-8-sig") as archivo:
             escritor = csv.DictWriter(archivo, fieldnames=CAMPOS)
             escritor.writeheader()
             escritor.writerows(paises)
         return True
     except OSError as error:
-        print(f"No se pudieron guardar los datos: {error}")
+        print(f"Error al guardar los datos: {error}")
         return False
 
 
@@ -57,10 +86,24 @@ def mostrar_paises(paises):
     if not paises:
         print("No se encontraron países.")
         return
-    print(f'{"Nombre":<20} {"Población":>15} {"Superficie km²":>18} {"Continente":<15}')
-    print("-" * 72)
+
+    print(f'{"Nombre":<18} {"Población":>15} {"Superficie km²":>18} {"Continente":<18}')
+    print("-" * 75)
     for pais in paises:
-        print(f'{pais["nombre"]:<20} {pais["poblacion"]:>15,} {pais["superficie"]:>18,} {pais["continente"]:<15}')
+        print(
+            f'{pais["nombre"]:<18} '
+            f'{pais["poblacion"]:>15,} '
+            f'{pais["superficie"]:>18,} '
+            f'{pais["continente"]:<18}'
+        )
+
+
+def leer_texto(mensaje):
+    while True:
+        valor = input(mensaje).strip()
+        if valor:
+            return valor
+        print("Este campo no puede quedar vacío.")
 
 
 def leer_entero(mensaje, minimo=0):
@@ -77,65 +120,94 @@ def leer_entero(mensaje, minimo=0):
 
 def agregar_pais(paises):
     print("\n--- Agregar país ---")
-    nombre = input("Nombre: ").strip()
-    continente = input("Continente: ").strip()
-    if not nombre or not continente:
-        print("Error: nombre y continente no pueden estar vacíos.")
+    nombre = leer_texto("Nombre: ")
+
+    if any(normalizar(p["nombre"]) == normalizar(nombre) for p in paises):
+        print("Error: ya existe un país con ese nombre.")
         return
-    if any(p["nombre"].casefold() == nombre.casefold() for p in paises):
-        print("Ya existe un país con ese nombre.")
-        return
-    poblacion = leer_entero("Población: ", 0)
-    superficie = leer_entero("Superficie en km² (debe ser mayor que 0): ", 1)
-    paises.append({"nombre": nombre, "poblacion": poblacion,
-                   "superficie": superficie, "continente": continente})
+
+    poblacion = leer_entero("Población (habitantes): ", 0)
+    superficie = leer_entero("Superficie en km²: ", 1)
+    continente = leer_texto("Continente: ")
+
+    paises.append({
+        "nombre": nombre,
+        "poblacion": poblacion,
+        "superficie": superficie,
+        "continente": continente
+    })
+
     if guardar_paises(paises):
-        print("País agregado correctamente.")
+        print("País agregado y guardado correctamente en paises.csv.")
 
 
 def actualizar_pais(paises):
-    nombre = input("Nombre del país que querés actualizar: ").strip()
-    pais = next((p for p in paises if p["nombre"].casefold() == nombre.casefold()), None)
+    print("\n--- Actualizar país ---")
+    nombre = leer_texto("Nombre del país que querés actualizar: ")
+    pais = next(
+        (p for p in paises if normalizar(p["nombre"]) == normalizar(nombre)),
+        None
+    )
+
     if pais is None:
         print("No se encontró ese país.")
         return
-    print("Dejá el valor actual como referencia y escribí el nuevo valor.")
-    pais["poblacion"] = leer_entero(f'Nueva población (actual {pais["poblacion"]}): ', 0)
-    pais["superficie"] = leer_entero(f'Nueva superficie en km² (actual {pais["superficie"]}): ', 1)
+
+    print(f'País: {pais["nombre"]}')
+    pais["poblacion"] = leer_entero("Nueva población: ", 0)
+    pais["superficie"] = leer_entero("Nueva superficie en km²: ", 1)
+
     if guardar_paises(paises):
-        print("Datos actualizados correctamente.")
+        print("Datos actualizados y guardados correctamente en paises.csv.")
 
 
 def buscar_pais(paises):
-    texto = input("Ingresá el nombre completo o una parte: ").strip().casefold()
-    if not texto:
-        print("La búsqueda no puede estar vacía.")
-        return
-    resultados = [p for p in paises if texto in p["nombre"].casefold()]
+    texto = leer_texto("Ingresá el nombre completo o una parte: ")
+    resultados = [
+        p for p in paises
+        if normalizar(texto) in normalizar(p["nombre"])
+    ]
     mostrar_paises(resultados)
 
 
 def filtrar_paises(paises):
-    print("\n1. Por continente\n2. Por rango de población\n3. Por rango de superficie")
+    print("\n1. Por continente")
+    print("2. Por rango de población")
+    print("3. Por rango de superficie")
     opcion = input("Elegí un filtro: ").strip()
+
     if opcion == "1":
-        continente = input("Continente: ").strip().casefold()
-        resultados = [p for p in paises if p["continente"].casefold() == continente]
+        continente = leer_texto("Continente: ")
+        resultados = [
+            p for p in paises
+            if normalizar(p["continente"]) == normalizar(continente)
+        ]
     elif opcion in ("2", "3"):
-        minimo = leer_entero("Valor mínimo: ", 0 if opcion == "2" else 1)
-        maximo = leer_entero("Valor máximo: ", minimo)
-        campo = "poblacion" if opcion == "2" else "superficie"
+        if opcion == "2":
+            campo = "poblacion"
+            minimo = leer_entero("Población mínima: ", 0)
+            maximo = leer_entero("Población máxima: ", minimo)
+        else:
+            campo = "superficie"
+            minimo = leer_entero("Superficie mínima en km²: ", 1)
+            maximo = leer_entero("Superficie máxima en km²: ", minimo)
+
         resultados = [p for p in paises if minimo <= p[campo] <= maximo]
     else:
         print("Opción inválida.")
         return
+
     mostrar_paises(resultados)
 
 
 def ordenar_paises(paises):
-    print("\n1. Nombre A-Z\n2. Población ascendente\n3. Población descendente")
-    print("4. Superficie ascendente\n5. Superficie descendente")
+    print("\n1. Nombre A-Z")
+    print("2. Población ascendente")
+    print("3. Población descendente")
+    print("4. Superficie ascendente")
+    print("5. Superficie descendente")
     opcion = input("Elegí cómo ordenar: ").strip()
+
     opciones = {
         "1": ("nombre", False),
         "2": ("poblacion", False),
@@ -143,26 +215,36 @@ def ordenar_paises(paises):
         "4": ("superficie", False),
         "5": ("superficie", True)
     }
+
     if opcion not in opciones:
         print("Opción inválida.")
         return
+
     campo, reverso = opciones[opcion]
-    mostrar_paises(sorted(paises, key=lambda p: p[campo].casefold() if campo == "nombre" else p[campo],
-                          reverse=reverso))
+    if campo == "nombre":
+        ordenados = sorted(paises, key=lambda p: normalizar(p[campo]), reverse=reverso)
+    else:
+        ordenados = sorted(paises, key=lambda p: p[campo], reverse=reverso)
+
+    mostrar_paises(ordenados)
 
 
 def mostrar_estadisticas(paises):
     if not paises:
         print("No hay datos suficientes para calcular estadísticas.")
         return
+
     mayor = max(paises, key=lambda p: p["poblacion"])
     menor = min(paises, key=lambda p: p["poblacion"])
     promedio_poblacion = sum(p["poblacion"] for p in paises) / len(paises)
     promedio_superficie = sum(p["superficie"] for p in paises) / len(paises)
+
     por_continente = {}
     for pais in paises:
-        por_continente[pais["continente"]] = por_continente.get(pais["continente"], 0) + 1
+        continente = pais["continente"]
+        por_continente[continente] = por_continente.get(continente, 0) + 1
 
+    print("\n--- Estadísticas ---")
     print(f'País con mayor población: {mayor["nombre"]} ({mayor["poblacion"]:,})')
     print(f'País con menor población: {menor["nombre"]} ({menor["poblacion"]:,})')
     print(f"Promedio de población: {promedio_poblacion:,.2f}")
@@ -174,6 +256,7 @@ def mostrar_estadisticas(paises):
 
 def menu():
     paises = cargar_paises()
+
     while True:
         print("\n===== GESTIÓN DE DATOS DE PAÍSES =====")
         print("1. Mostrar todos los países")
@@ -184,6 +267,7 @@ def menu():
         print("6. Ordenar países")
         print("7. Mostrar estadísticas")
         print("0. Guardar y salir")
+
         opcion = input("Elegí una opción: ").strip()
 
         if opcion == "1":
@@ -201,8 +285,8 @@ def menu():
         elif opcion == "7":
             mostrar_estadisticas(paises)
         elif opcion == "0":
-            guardar_paises(paises)
-            print("Datos guardados. ¡Hasta luego!")
+            if guardar_paises(paises):
+                print("Datos guardados en paises.csv. ¡Hasta luego!")
             break
         else:
             print("Opción inválida. Elegí una opción del menú.")
