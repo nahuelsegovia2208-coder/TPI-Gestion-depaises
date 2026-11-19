@@ -10,6 +10,11 @@ Aplicación de consola para administrar países mediante listas, diccionarios, f
 ## Archivos
 - `main.py`: código fuente del programa.
 - `paises.csv`: dataset inicial de países.
+- `LÉAME.md`: documentación del proyecto.
+- `informe_corregido.pdf.pdf`: informe del trabajo integrador.
+
+## Repositorio de GitHub
+[Ver repositorio del proyecto](https://github.com/nahuelsegovia2208-coder/TPI-Gestion-depaises)
 
 ## Cómo ejecutar
 1. Colocar `main.py` y `paises.csv` en la misma carpeta.
@@ -30,9 +35,9 @@ Aplicación de consola para administrar países mediante listas, diccionarios, f
 Los cambios realizados al agregar o actualizar países se guardan automáticamente en `paises.csv`, que puede abrirse con Excel. Al abrirlo en Excel se verán los mismos datos guardados por el programa. Se recomienda cerrar Excel antes de ejecutar el programa para evitar conflictos de bloqueo del archivo.
 
 ## Participación de los integrantes
-Completar con los nombres y tareas reales de cada integrante.
+Trabajo realizado individualmente por el estudiante responsable del proyecto, incluyendo el desarrollo del programa, la organización de los datos, la documentación y la preparación del informe.
 
 ## Enlaces de entrega
-- Repositorio GitHub: completar con el enlace real.
-- Video demostrativo público (10 a 15 minutos): completar con el enlace real.
-- Informe PDF: agregar el PDF final en la raíz del repositorio o enlazarlo aquí.
+- **Repositorio GitHub:** https://github.com/nahuelsegovia2208-coder/TPI-Gestion-depaises
+- **Video demostrativo (10 a 15 minutos):** pendiente de publicación.
+- **Informe PDF:** [Ver informe del proyecto](informe_corregido.pdf.pdf)
