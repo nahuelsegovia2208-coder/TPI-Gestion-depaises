@@ -35,7 +35,7 @@ Aplicación de consola para administrar países mediante listas, diccionarios, f
 Los cambios realizados al agregar o actualizar países se guardan automáticamente en `paises.csv`, que puede abrirse con Excel. Al abrirlo en Excel se verán los mismos datos guardados por el programa. Se recomienda cerrar Excel antes de ejecutar el programa para evitar conflictos de bloqueo del archivo.
 
 ## Participación de los integrantes
-Trabajo realizado individualmente por el estudiante responsable del proyecto, incluyendo el desarrollo del programa, la organización de los datos, la documentación y la preparación del informe.
+El trabajo fue realizado por mí de manera individual
 
 ## Enlaces de entrega
 - **Repositorio GitHub:** https://github.com/nahuelsegovia2208-coder/TPI-Gestion-depaises
