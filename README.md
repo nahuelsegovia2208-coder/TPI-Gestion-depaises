@@ -39,5 +39,5 @@ El trabajo fue realizado por mí de manera individual
 
 ## Enlaces de entrega
 - **Repositorio GitHub:** https://github.com/nahuelsegovia2208-coder/TPI-Gestion-depaises
-- **Video demostrativo (10 a 15 minutos):** pendiente de publicación.
+- **Video demostrativo (10 a 15 minutos):** https://youtu.be/gwApmU4rXyY
 - **Informe PDF:** [Ver informe del proyecto](informe_corregido.pdf.pdf)
